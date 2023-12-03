@@ -4,8 +4,6 @@ using NuGet.Protocol.Core.Types;
 
 namespace Exam.Repositories;
 
-public interface IAnswerResultRepository : IRepository<AnswerResult>
+public interface IAnswerResultRepository : IRepository<AnswerResult>, IRequestByEmailReposiotory<AnswerResult>
 {
-    ResponseResult Add(AnswerResult entity);
-    ResponseResult Update(AnswerResult entity);
 }

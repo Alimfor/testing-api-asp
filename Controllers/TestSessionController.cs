@@ -26,6 +26,7 @@ namespace Exam.Controllers
     private const string GET_ALL_TEST_SESSIONS = "all";
     private const string GET_TEST_SESSION_BY_ID = "{id}";
     private const string POST_ADD_TEST_SESSION = "new";
+    private const string POST_ADD_TEST_SESSION_AND_RETRIEVE_ID = "retrieve_id_after_addition";
     private const string PUT_UPDATE_TEST_SESSION = "renew";
     private const string DELETE_TEST_SESSION_BY_ID = "{id}";
         
@@ -38,9 +39,7 @@ namespace Exam.Controllers
 
         var enumerable = testSessions.ToList();
         if (!enumerable.Any() && result.code == 200)
-        {
-            return Ok(Enumerable.Empty<TestSession>());
-        }
+            return NoContent();
 
         var testSessionDtos = enumerable.Select(
             testSession => testSession.ToTestSessionDto()
@@ -67,6 +66,19 @@ namespace Exam.Controllers
     {
         var result = _testSessionService.AddTestSession(testSessionDto.ToTestSession());
         return ActionResultUtil.ResultState(this, result);
+    }
+
+    [HttpPost(POST_ADD_TEST_SESSION_AND_RETRIEVE_ID)]
+    public IActionResult AddTestSessionAndGetId([FromBody] TestSessionDto testSessionDto)
+    {
+        var operationResult = _testSessionService.GetTestSessionIdAfterAdding(testSessionDto.ToTestSession());
+        var result = operationResult.result;
+            
+        if (result.code != 200)
+            return ActionResultUtil.ResultState(this, result);
+
+        int testSessionId = operationResult.data;
+        return ActionResultUtil.ResultState(this, result, testSessionId);
     }
 
     [HttpPut(PUT_UPDATE_TEST_SESSION)]

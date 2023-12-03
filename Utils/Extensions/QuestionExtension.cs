@@ -6,17 +6,15 @@ namespace Exam.Utils.Extensions;
 public static class QuestionExtension
 {
     public static QuestionResponseDto ToQuestionDto(this Question question)
-    {
-        return new QuestionResponseDto
+        => new()
         {
             QuestionText = question.QuestionText,
             CorrectAnswer = question.CorrectAnswer
         };
-    }
 
     public static Question ToQuestion(this QuestionResponseDto questionResponseDto)
         => fillInstance(questionResponseDto);
-    
+
     public static Question ToQuestion(this QuestionRequestDto questionRequestDto)
     {
         var question = fillInstance(questionRequestDto);
@@ -25,11 +23,9 @@ public static class QuestionExtension
     }
 
     private static Question fillInstance(QuestionResponseDto questionResponseDto)
-    {
-        return new Question
+        => new()
         {
             QuestionText = questionResponseDto.QuestionText,
             CorrectAnswer = questionResponseDto.CorrectAnswer
         };
-    }
 }

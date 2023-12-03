@@ -7,5 +7,7 @@ public interface IRepository<T>
 {
     OperationResult<IEnumerable<T>> GetAll();
     OperationResult<T> GetById(int id);
+    ResponseResult Add(T entity);
+    ResponseResult Update(T entity);
     ResponseResult Delete(int id);
 }

@@ -1,5 +1,4 @@
 using Exam.DTO;
-using Exam.Entities;
 using Exam.Services;
 using Exam.Utils;
 using Exam.Utils.Extensions;
@@ -33,15 +32,15 @@ public class QuestionController : ControllerBase
 
         var enumerable = questions.ToList();
         if (!enumerable.Any() && result.code == 200)
-        {
-            return Ok(Enumerable.Empty<Person>());
-        }
+            return NoContent();
 
-        var personDtos = enumerable.Select(
-            person => person.ToQuestionDto()
+        var questionResponseDtos = enumerable.Select(
+            question => question.ToQuestionDto()
         );
-            
-        return ActionResultUtil.ResultState(this, result,personDtos);
+
+        return ActionResultUtil.ResultState(
+            this, result, questionResponseDtos
+        );
     }
 
     [HttpGet(GET_QUESTION_BY_ID)]

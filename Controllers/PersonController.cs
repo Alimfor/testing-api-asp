@@ -33,9 +33,7 @@ public class PersonController : ControllerBase
 
         var enumerable = persons.ToList();
         if (!enumerable.Any() && result.code == 200)
-        {
-            return Ok(Enumerable.Empty<Person>());
-        }
+            return NoContent();
 
         var personDtos = enumerable.Select(
             person => person.ToPersonDto()

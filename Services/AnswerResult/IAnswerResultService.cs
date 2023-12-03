@@ -10,4 +10,5 @@ public interface IAnswerResultService
     ResponseResult AddAnswerResult(AnswerResult answerResult);
     ResponseResult UpdateAnswerResult(AnswerResult answerResult);
     ResponseResult DeleteAnswerResult(int id);
+    OperationResult<AnswerResult> GetAnswerResultByPersonEmail(string email);
 }

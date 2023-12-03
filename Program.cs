@@ -6,8 +6,20 @@ using Exam.Utils.Mapper;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(
+        policyBuilder =>
+        {
+            policyBuilder.AllowAnyOrigin()
+                .AllowAnyHeader()
+                .AllowAnyMethod();
+        });
+});
+
 FluentMapper.Initialize(config =>
 {
+    config.AddMap(new AnswerOptionMapper());
     config.AddMap(new AnswerResultMapper());
     config.AddMap(new EntityStoreMapper());
     config.AddMap(new PersonAnswerMapper());
@@ -16,12 +28,14 @@ FluentMapper.Initialize(config =>
     config.AddMap(new TestSessionMapper());
 });
 
+builder.Services.AddTransient<IAnswerOptionRepository, AnswerOptionRepository>();
 builder.Services.AddTransient<IAnswerResultRepository, AnswerResultRepository>();
 builder.Services.AddTransient<IPersonRepository, PersonRepository>();
 builder.Services.AddTransient<IPersonAnswerRepository, PersonAnswerRepository>();
 builder.Services.AddTransient<IQuestionRepository, QuestionRepository>();
 builder.Services.AddTransient<ITestSessionRepository, TestSessionRepository>();
 
+builder.Services.AddTransient<IAnswerOptionService, AnswerOptionService>();
 builder.Services.AddTransient<IAnswerResultService, AnswerResultService>();
 builder.Services.AddTransient<IPersonService, PersonService>();
 builder.Services.AddTransient<IPersonAnswerService, PersonAnswerService>();
@@ -43,6 +57,8 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 app.UseAuthorization();
+
+app.UseCors();
 
 app.MapControllers();
 

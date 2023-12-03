@@ -13,7 +13,7 @@ public static class PersonAnswerExtension
     public static PersonAnswer ToPersonAnswer(
         this PersonAnswerRequestDto personAnswerRequestDto
     ) => fillInstance(personAnswerRequestDto);
-    
+
     public static PersonAnswer ToPersonAnswer(
         this PersonAnswerRequestIdDto personAnswerRequest
     )
@@ -24,13 +24,11 @@ public static class PersonAnswerExtension
     }
 
     private static PersonAnswer fillInstance(PersonAnswerRequestDto instance)
-    {
-        return new PersonAnswer
+        => new()
         {
             PersonAnswerText = instance.PersonAnswerText,
             TestSessionId = instance.TestSessionId,
-            PersonId = instance.PersonId,
+            PersonEmail = instance.PersonEmail,
             QuestionId = instance.QuestionId
         };
-    }
 }

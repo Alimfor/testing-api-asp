@@ -14,72 +14,8 @@ public class TestSessionRepository: DapperRepository<TestSession>, ITestSessionR
     {
         _configuration = configuration;
     }  
-    
-    public ResponseResult Add(TestSession entity)
-    {
-        try
-        {
-            using var connection = new SqlConnection(_configuration.GetConnectionString("conStr"));
-            connection.Execute("pAddTestSession",
-                new
-                {
-                    entity.TestStartDate, entity.TestEndDate,
-                    entity.CreatedAt
-                },
-                commandType: CommandType.StoredProcedure
-            );
-    
-            return new ResponseResult
-            {
-                message = "success",
-                code = 200,
-                status = ResponseStatus.SUCCESSFUL
-            };
-        }
-        catch (Exception ex)
-        {
-            return new ResponseResult
-            {
-                message = ex.Message,
-                code = 500,
-                status = ResponseStatus.INTERNAL_SERVER_ERROR
-            };
-        }
-    }
 
-    public ResponseResult Update(TestSession entity)
-    {
-        try
-        {
-            using var connection = new SqlConnection(_configuration.GetConnectionString("conStr"));
-            connection.Execute("pUpdateTestSession",
-                new
-                {
-                    entity.TestSessionId,
-                    entity.TestStartDate, entity.TestEndDate
-                },
-                commandType: CommandType.StoredProcedure
-            );
-
-            return new ResponseResult
-            {
-                message = "success",
-                code = 200,
-                status = ResponseStatus.SUCCESSFUL
-            };
-        }
-        catch (Exception ex)
-        {
-            return new ResponseResult
-            {
-                message = ex.Message,
-                code = 500,
-                status = ResponseStatus.INTERNAL_SERVER_ERROR
-            };
-        }
-    }
-
-    public OperationResult<int> GetIdAfterAdding(TestSession entity)
+   public OperationResult<int> GetIdAfterAdding(TestSession entity)
     {
         try
         {
@@ -119,4 +55,55 @@ public class TestSessionRepository: DapperRepository<TestSession>, ITestSessionR
             };
         }
     }
+
+   public OperationResult<TestSession> GetByEmail(string personEmail)
+   {
+       try
+       {
+           using var connection = new SqlConnection(_configuration.GetConnectionString("conStr"));
+            
+           var testSession = connection.Query<TestSession>("pGetAnswerResultByPersonEmail",
+               new { email = personEmail },
+               commandType: CommandType.StoredProcedure
+           ).FirstOrDefault();
+
+           if (testSession != null)
+           {
+               return new OperationResult<TestSession>
+               {
+                   data = testSession,
+                   result = new ResponseResult
+                   {
+                       message = "success",
+                       code = 200,
+                       status = ResponseStatus.SUCCESSFUL
+                   }
+               };
+           }
+           
+           return new OperationResult<TestSession>
+           {
+               data = new TestSession(),
+               result = new ResponseResult
+               {
+                   message = "wrong request",
+                   code = 400,
+                   status = ResponseStatus.SUCCESSFUL
+               }
+           };
+       }
+       catch (Exception ex)
+       {
+           return new OperationResult<TestSession>
+           {
+               data = new TestSession(),
+               result = new ResponseResult
+               {
+                   message = ex.Message,
+                   code = 500,
+                   status = ResponseStatus.INTERNAL_SERVER_ERROR
+               }
+           };
+       }
+   }
 }

@@ -3,8 +3,6 @@ using Exam.Utils;
 
 namespace Exam.Repositories;
 
-public interface IPersonRepository : IRepository<Person>
+public interface IPersonRepository : IRepository<Person>, IRequestByEmailReposiotory<Person>
 {
-    ResponseResult Add(Person entity);
-    ResponseResult Update(Person entity);
 }

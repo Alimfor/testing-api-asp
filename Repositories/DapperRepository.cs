@@ -1,9 +1,8 @@
 using System.Data;
 using System.Data.SqlClient;
-using System.Text;
 using Dapper;
 using Exam.Utils;
-using Newtonsoft.Json;
+using Exam.Utils.StringMutationForRepository;
 
 namespace Exam.Repositories;
 
@@ -21,9 +20,9 @@ public class DapperRepository<T> : IRepository<T>
         try
         {
             using var connection = new SqlConnection(_configuration.GetConnectionString("conStr"));
-            
-            var TableName = ConvertToSnakeCase(typeof(T).Name);
-            
+
+            var TableName = ConvertToSpecifyCase.ConvertToSnakeCase(typeof(T).Name);
+
             var Tlist = connection.Query<T>(
                 "getAllT", new
                 {
@@ -31,7 +30,7 @@ public class DapperRepository<T> : IRepository<T>
                 },
                 commandType: CommandType.StoredProcedure
             );
-            
+
             return new OperationResult<IEnumerable<T>>
             {
                 data = Tlist,
@@ -64,14 +63,13 @@ public class DapperRepository<T> : IRepository<T>
         try
         {
             using var connection = new SqlConnection(_configuration.GetConnectionString("conStr"));
-            
-            var TableName = ConvertToSnakeCase(typeof(T).Name);
-            
+
+            var TableName = ConvertToSpecifyCase.ConvertToSnakeCase(typeof(T).Name);
             var responseEntity = connection.QueryFirstOrDefault<T>(
-                "GetTById", 
-                new {TableName,Id = id},
+                "GetTById",
+                new { TableName, Id = id },
                 commandType: CommandType.StoredProcedure
-                );
+            );
 
             if (responseEntity != null)
             {
@@ -86,7 +84,7 @@ public class DapperRepository<T> : IRepository<T>
                     }
                 };
             }
-            
+
             return new OperationResult<T>
             {
                 data = defaultEntity,
@@ -112,21 +110,27 @@ public class DapperRepository<T> : IRepository<T>
             };
         }
     }
-    
-    public ResponseResult Delete(int id)
+
+    public ResponseResult Add(T entity)
     {
         try
         {
             using var connection = new SqlConnection(_configuration.GetConnectionString("conStr"));
             
-            var TableName = typeof(T).Name;
-            var Condition = $"{ConvertToSnakeCase(TableName)}_id = {id}";
+            var tableName = ConvertToSpecifyCase.ConvertToSnakeCase(typeof(T).Name);
+            var columnValuesJson = GetColumnValues(entity);
+            var parameters = new
+            {
+                TableName = tableName,
+                ColumnValues = columnValuesJson
+            };
 
-            connection.Execute("DeleteData",
-                new { TableName, Condition },
+            connection.Execute(
+                "InsertTData",
+                parameters,
                 commandType: CommandType.StoredProcedure
             );
-            
+
             return new ResponseResult
             {
                 message = "success",
@@ -144,33 +148,115 @@ public class DapperRepository<T> : IRepository<T>
             };
         }
     }
-    
-    private string ConvertToSnakeCase(string input)
+
+    public ResponseResult Update(T entity)
     {
-        var output = string.Empty;
-
-        for (int i = 0; i < input.Length; i++)
+        try
         {
-            if (char.IsUpper(input[i]))
+            using var connection = new SqlConnection(_configuration.GetConnectionString("conStr"));
+            
+            var tableName = ConvertToSpecifyCase.ConvertToSnakeCase(typeof(T).Name);
+            var columnValuesJson = GetUpdateSetValues(entity);
+            var idPropertyValue = 
+                typeof(T).GetProperty($"{typeof(T).Name}Id")?.GetValue(entity);
+            var parameters = new
             {
-                if (i > 0 && input[i - 1] == 's')
-                {
-                    output = output.Substring(0, output.Length - 1) + "_";
-                }
-                else if (i > 0)
-                {
-                    output += "_";
-                }
+                TableName = tableName,
+                SetColumnValues = columnValuesJson,
+                Condition = $"{tableName}_id = {idPropertyValue}"
+            };
 
-                output += char.ToLower(input[i]);
-            }
-            else
+            connection.Execute(
+                "UpdateData",
+                parameters,
+                commandType: CommandType.StoredProcedure
+            );
+
+            return new ResponseResult
             {
-                output += input[i];
-            }
+                message = "success",
+                code = 200,
+                status = ResponseStatus.SUCCESSFUL
+            };
         }
-
-        return output;
+        catch (Exception ex)
+        {
+            return new ResponseResult
+            {
+                message = ex.Message,
+                code = 500,
+                status = ResponseStatus.INTERNAL_SERVER_ERROR
+            };
+        }
     }
-    
+
+    public ResponseResult Delete(int id)
+    {
+        try
+        {
+            using var connection = new SqlConnection(_configuration.GetConnectionString("conStr"));
+
+            var TableName = typeof(T).Name;
+            var Condition = $"{ConvertToSpecifyCase.ConvertToSnakeCase(TableName)}_id = {id}";
+
+            connection.Execute("DeleteData",
+                new { TableName, Condition },
+                commandType: CommandType.StoredProcedure
+            );
+
+            return new ResponseResult
+            {
+                message = "success",
+                code = 200,
+                status = ResponseStatus.SUCCESSFUL
+            };
+        }
+        catch (Exception ex)
+        {
+            return new ResponseResult
+            {
+                message = ex.Message,
+                code = 500,
+                status = ResponseStatus.INTERNAL_SERVER_ERROR
+            };
+        }
+    }
+
+    private string GetColumnValues(T entity)
+    {
+        var properties = typeof(T).GetProperties()
+            .Where(p => p.Name != $"{typeof(T).Name}Id")
+            .Select(p => p.GetValue(entity));
+
+        var formattedValues = properties
+            .Select(value =>
+            {
+                if (value is string)
+                    return $"'{value}'";
+
+                return value is DateTime time
+                    ? $"'{time:dd-MM-yyyy HH:mm:ss}'"
+                    : value.ToString();
+            });
+
+        return string.Join(", ", formattedValues);
+    }
+
+    private string GetUpdateSetValues(T entity)
+    {
+        var properties = typeof(T).GetProperties()
+            .Where(p =>
+                p.Name != $"{typeof(T).Name}Id" &&
+                p.Name != "CreatedAt"
+            )
+            .Select(p =>
+                $"{ConvertToSpecifyCase.ConvertToSnakeCase(p.Name)} = " +
+                (p.PropertyType == typeof(string)
+                    ? $"'{p.GetValue(entity)}'"
+                    : p.PropertyType == typeof(DateTime)
+                        ? $"'{p.GetValue(entity):dd-MM-yyyy HH:mm:ss}'"
+                        : p.GetValue(entity).ToString()));
+
+        return string.Join(", ", properties);
+    }
 }
